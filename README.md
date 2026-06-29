@@ -27,11 +27,9 @@ curl -fsSL https://ollama.com/install.sh | sh
 ```
 
 
-Teniendo OLLAMA, montamos los modelos usando los siguientes comandos:
+Teniendo OLLAMA, montamos los modelos usando el siguiente comando:
 
 ```bash
-ollama pull nomic-embed-text
-
 ollama run qwen2.5-coder:7b
 ```
 
