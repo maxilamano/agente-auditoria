@@ -105,3 +105,5 @@ conn.close()
 
 for reg in registros:
     st.write(f"ID {reg[0]} | **Proyecto:** {reg[1]} | **Método:** {reg[2]}")
+
+#comentario de prueba
