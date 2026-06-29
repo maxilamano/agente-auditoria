@@ -5,7 +5,6 @@ __pycache__/
 .vscode/
 .env
 .DS_Store
-
-chroma_db/
-# Bases de datos locales
 *.db
+auditorias.db
+chroma_db/
