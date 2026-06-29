@@ -1,11 +1,14 @@
-venv/
-env/
+# Bases de datos y Vectores
+*.db
+auditorias.db
+chroma_db/
+
+# Carpetas temporales y caché de Python
 __pycache__/
 *.pyc
-.vscode/
-.env
-.DS_Store
-/*.db
-*.db
-/auditorias.db
-chroma_db/
+.temp/
+
+# Entornos Virtuales (Si creaste alguno)
+venv/
+.venv/
+env/
