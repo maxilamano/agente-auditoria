@@ -11,7 +11,7 @@ Para utilizar este repositorio necesitas python. Este proyecto solo se ha testea
 Con esto también necesitas multiples paquetes de python, los puedes instalar con windows PowerShell o el terminal de linux usando:
 
 ```bash
-  python -m pip install streamlit langchain langchain-community pylance langchain-chroma langchain-ollama gitpython requests pypdf langchain-huggingface sentence-transformers
+  python -m pip install streamlit langchain langchain-community pylance langchain-chroma langchain-ollama gitpython requests pypdf langchain-huggingface sentence-transformers torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
 
