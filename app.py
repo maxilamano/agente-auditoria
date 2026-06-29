@@ -48,6 +48,16 @@ col_form, col_historial = st.columns([2, 1])
 with col_form:
     st.subheader("📝 Configuración de la Auditoría")
     
+    # 1. MOVEMOS EL RADIO BUTTON FUERA DEL FORMULARIO PARA QUE SEA DINÁMICO
+    tipo_origen = st.radio(
+        "Selecciona el origen del código fuente:",
+        ["Carpeta Local", "Repositorio GitHub"],
+        horizontal=True
+    )
+    
+    st.write("---")
+    
+    # 2. INICIAMOS EL FORMULARIO DESPUÉS DE LA SELECCIÓN
     with st.form("formulario_auditoria"):
         nombre_proyecto = st.text_input("Nombre del Software / Proyecto a auditar:", placeholder="Ej. Sistema de Gestión Escolar")
         
@@ -61,13 +71,7 @@ with col_form:
             ]
         )
         
-        st.write("---")
-        tipo_origen = st.radio(
-            "Selecciona el origen del código fuente:",
-            ["Carpeta Local", "Repositorio GitHub"],
-            horizontal=True
-        )
-        
+        # 3. LA INTERFAZ AHORA REACCIONARÁ EN TIEMPO REAL AL RADIO BUTTON EXTERNO
         if tipo_origen == "Carpeta Local":
             origen_input = st.text_input(
                 "Ruta absoluta de la carpeta en tu computadora:", 
