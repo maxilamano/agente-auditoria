@@ -53,17 +53,34 @@ def leer_codigo_fuente(ruta_carpeta):
     codigo_consolidado = ""
     extensiones_validas = ('.py', '.js', '.ts', '.cs', '.java', '.cpp', '.c', '.h', '.html', '.css', '.gml', '.php')
     
+    # Carpetas que no aportan a la auditoría core y solo consumen tokens
+    carpetas_ignoradas = {'.git', 'node_modules', 'build', 'vendor', 'third_party', 'tests', 'docs', 'assets', 'public'}
+    
     if not os.path.exists(ruta_carpeta):
         return "Ruta de código no válida o inexistente."
         
-    for raiz, _, archivos in os.walk(ruta_carpeta):
+    for raiz, carpetas, archivos in os.walk(ruta_carpeta):
+        # Filtrar carpetas basura en tiempo real para no entrar en ellas
+        carpetas[:] = [d for d in carpetas if d not in carpetas_ignoradas]
+        
         for archivo in archivos:
             if archivo.endswith(extensiones_validas):
                 ruta_completa = os.path.join(raiz, archivo)
                 try:
                     with open(ruta_completa, 'r', encoding='utf-8') as f:
+                        contenido = f.read()
+                        
+                        # Extraer solo una muestra representativa de cada archivo (ej. 2500 caracteres)
+                        # Esto permite meter muchos más archivos diferentes en el contexto de la IA
+                        if len(contenido) > 2500:
+                            contenido = contenido[:2500] + "\n...[CÓDIGO TRUNCADO POR TAMAÑO]..."
+                            
                         codigo_consolidado += f"\n\n--- ARCHIVO: {archivo} ---\n"
-                        codigo_consolidado += f.read()
+                        codigo_consolidado += contenido
+                        
+                        # Si ya tenemos un paneo general enorme, detenemos la extracción
+                        if len(codigo_consolidado) > 35000:
+                            return codigo_consolidado
                 except Exception:
                     continue
                     
@@ -72,6 +89,11 @@ def leer_codigo_fuente(ruta_carpeta):
 # ==========================================
 # 4. FLUJO PRINCIPAL AUDITORÍA
 # ==========================================
+def forzar_borrado(func, path, exc_info):
+    """Función auxiliar para quitar el 'Solo lectura' de los archivos de Git en Windows."""
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
+
 def generar_auditoria_completa(nombre_proyecto, metodo, origen_tipo, ruta_o_url):
     # 1. RAG
     contexto_normas = ""
@@ -94,15 +116,16 @@ def generar_auditoria_completa(nombre_proyecto, metodo, origen_tipo, ruta_o_url)
             directorio_a_leer = carpeta_temporal
         except Exception as e:
             if carpeta_temporal and os.path.exists(carpeta_temporal):
-                shutil.rmtree(carpeta_temporal)
-            return f"Error crítico al intentar clonar desde GitHub: {str(e)}. Verifica que el repositorio sea público y la URL sea correcta."
+                # Usamos el fix de Windows en caso de error
+                shutil.rmtree(carpeta_temporal, onerror=forzar_borrado)
+            return f"Error crítico al intentar clonar desde GitHub: {str(e)}"
 
     # Procesar la lectura de archivos
     codigo_proyecto = leer_codigo_fuente(directorio_a_leer)
     
-    # Limpieza inmediata si usamos GitHub para liberar espacio
+    # Limpieza inmediata si usamos GitHub para liberar espacio (FIX WINDOWS APLICADO)
     if carpeta_temporal and os.path.exists(carpeta_temporal):
-        shutil.rmtree(carpeta_temporal)
+        shutil.rmtree(carpeta_temporal, onerror=forzar_borrado)
 
     if not codigo_proyecto or len(codigo_proyecto.strip()) == 0:
         return "No se detectó código fuente analizable (revisa las extensiones de tus archivos)."
@@ -110,9 +133,9 @@ def generar_auditoria_completa(nombre_proyecto, metodo, origen_tipo, ruta_o_url)
     # Configurar el texto que se inyectará en el prompt
     origen_texto = f"Repositorio Remoto de GitHub ({ruta_o_url})" if origen_tipo == "Repositorio GitHub" else f"Directorio Local ({ruta_o_url})"
 
-    # Prompt técnico e imperativo riguroso
+    # Prompt técnico con reglas estrictas de Markdown y formato
     template = """
-    Actúa como un Auditor de Software e Ingeniero de Calidad de Código Senior. Tu único objetivo es inspeccionar el código provisto de forma crítica y severa.
+    Actúa como un Auditor de Software e Ingeniero de Calidad de Código Senior. Acabas de terminar de inspeccionar el código del proyecto.
     
     PROYECTO A AUDITAR: {proyecto}
     ORIGEN DEL SOFTWARE: {origen}
@@ -121,35 +144,37 @@ def generar_auditoria_completa(nombre_proyecto, metodo, origen_tipo, ruta_o_url)
     CONTEXTO NORMATIVO (RAG):
     {normas}
     
-    CÓDIGO FUENTE REAL A ANALIZAR (Inspecciona la sintaxis, funciones y lógica aquí descritas):
+    CÓDIGO FUENTE REAL ANALIZADO:
     {codigo}
     
-    INSTRUCCIONES CRÍTICAS: 
-    - No te limites a describir qué hace el programa. Debes evaluar su calidad técnica real.
-    - Debes buscar activamente bugs, malas prácticas, vulnerabilidades o áreas de mejora en el código provisto.
-    - Es obligatorio citar nombres de funciones, variables o tablas reales del código analizado para demostrar que lo leíste de verdad.
+    REGLAS DE FORMATO ESTRICTAS:
+    1. Usa Markdown válido. Escribe los títulos con ## y usa viñetas (*) para listar elementos.
+    2. Si vas a sugerir o mostrar código, DEBES usar bloques de código con saltos de línea correctos (ejemplo: ```cpp ... ```). No escribas código en una sola línea.
+    3. Usa negritas (**) para destacar nombres de archivos, funciones o vulnerabilidades.
+    4. HABLA EN PRESENTE O PASADO. Estás entregando los resultados, no proponiendo lo que vas a hacer.
     
     Genera el informe técnico estructurado estrictamente en ESPAÑOL bajo las siguientes secciones:
     
     ## 1. FASES EN EL PROCESO DE AUDITORÍA DE SOFTWARE
-    (Establece un cronograma real de cómo aplicarías la Planificación, Ejecución y Dictamen específicamente sobre este código usando el método {metodo}).
+    * **Planificación Ejecutada:** Describe qué herramientas y enfoque utilizaste para procesar este código en específico bajo el método {metodo}.
+    * **Ejecución:** Detalla qué partes del código (archivos/funciones que leíste) sometiste a evaluación.
+    * **Dictamen Final:** Entrega un veredicto claro (Aprobado, Aprobado con Observaciones, o Rechazado) basándote en la calidad del código.
     
     ## 2. REQUERIMIENTO DE EVALUACIÓN
-    (Menciona características específicas de las normas ISO del RAG, por ejemplo, Mantenibilidad, Seguridad o Portabilidad, y evalúa cómo puntúa el código fuente provisto en ellas. Identifica fallas tangibles).
+    Mapea características específicas de las normas ISO del RAG (ej. Mantenibilidad, Seguridad, Eficiencia) contra el código. Cita **obligatoriamente** variables, clases o funciones reales del código que demuestren fallos o aciertos tangibles.
     
     ## 3. DISEÑO DE EVALUACIÓN
-    (Presenta un diseño de pruebas técnicas aplicables a ESTE código fuente. Si elegiste Análisis Estático, detalla qué herramientas de software como Linters o SonarQube usarías, y qué funciones específicas del código deberían ser vigiladas de cerca).
+    Presenta la metodología técnica usada. Detalla qué vulnerabilidades específicas se buscaron en ESTE código fuente. Si escribes un ejemplo de prueba unitaria para arreglar las funciones deficientes, formatea el bloque de código correctamente.
     """
     
     prompt = PromptTemplate.from_template(template)
     
-    # CORRECCIÓN AQUÍ: Se mapea 'origen' directamente a la variable 'origen_texto'
     prompt_final = prompt.format(
         proyecto=nombre_proyecto,
         origen=origen_texto,
         metodo=metodo,
         normas=contexto_normas,
-        codigo=codigo_proyecto[:30000]
+        codigo=codigo_proyecto 
     )
     
     respuesta = llm.invoke(prompt_final)
