@@ -11,7 +11,7 @@ Para utilizar este repositorio necesitas python. Este proyecto solo se ha testea
 Con esto también necesitas multiples paquetes de python, los puedes instalar con windows PowerShell o el terminal de linux usando:
 
 ```bash
-  python -m pip install streamlit langchain langchain-community pylance langchain-chroma gitpython requests
+  python -m pip install streamlit langchain langchain-community pylance langchain-chroma langchain-ollama gitpython requests pypdf langchain-huggingface sentence-transformers
 ```
 
 
@@ -27,9 +27,11 @@ curl -fsSL https://ollama.com/install.sh | sh
 ```
 
 
-Teniendo OLLAMA, montamos el modelo usando:
+Teniendo OLLAMA, montamos los modelos usando los siguientes comandos:
 
 ```bash
+ollama pull nomic-embed-text
+
 ollama run qwen2.5-coder:7b
 ```
 
